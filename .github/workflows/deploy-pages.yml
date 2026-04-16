@@ -25,11 +25,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Generate config.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing secrets: SUPABASE_URL and/or SUPABASE_ANON_KEY. Add them in Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
           cat > config.js <<EOF
           window.__APP_CONFIG__ = {
-            SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
-            SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+            SUPABASE_URL: "$SUPABASE_URL",
+            SUPABASE_ANON_KEY: "$SUPABASE_ANON_KEY"
           };
           EOF
 

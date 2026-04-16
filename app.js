@@ -1378,6 +1378,11 @@ async function saveWeight(historyKey) {
 
 // ----- SISTEMA DE AUTENTICAÇÃO (SUPABASE) -----
 async function checkSession() {
+    if (!supabaseClient) {
+        showAuth();
+        return;
+    }
+
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
@@ -2040,21 +2045,23 @@ async function handleAddExercise(e) {
 document.addEventListener("DOMContentLoaded", () => {
     // Configura Auth via Supabase
     checkSession();
-    
-    // Ouve mudanças na autenticação
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN') {
-            currentUser = session.user;
-            showApp();
-        } else if (event === 'SIGNED_OUT') {
-            currentUser = null;
-            showAuth();
-        }
-    });
+
+    if (supabaseClient) {
+        // Ouve mudanças na autenticação
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                currentUser = session.user;
+                showApp();
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                showAuth();
+            }
+        });
+    }
 
     // Torna currentUser acessível globalmente para verificar se é admin em qualquer lugar
     window.checkIsAdmin = async function() {
-        if (!currentUser) return false;
+        if (!currentUser || !supabaseClient) return false;
         try {
             const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
             return data && data.role === 'admin';
