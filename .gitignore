@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 node_modules/
 test_supabase.mjs
+config.js
