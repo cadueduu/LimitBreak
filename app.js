@@ -1644,7 +1644,10 @@ async function handleAuth(event) {
                 password: password,
             });
             if (error) throw error;
-            // Se logar com sucesso, o listener do onAuthStateChange chamará o showApp()
+            if (data.session) {
+                currentUser = data.session.user;
+                showApp();
+            }
         }
     } catch (error) {
         console.error("Erro na autenticação:", error);
