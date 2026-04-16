@@ -5,13 +5,43 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Chave de serviço para permitir ao Admin ler fichas de outros alunos (ignora RLS)
 const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjU2MCwiZXhwIjoyMDkxOTMyNTYwfQ.uIJMRjP3cxGs0p0hxGS44UIiWVV0bEUmVvtmLzzJNpw";
 
-// Garantir que a variável global não gere erro de conflito caso o arquivo seja carregado multiplas vezes
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.adminSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+let supabaseClient = window.supabaseClient || null;
+let adminSupabaseClient = window.adminSupabaseClient || null;
+
+function isSupabaseClientReady(client) {
+    return !!client && !!client.auth && typeof client.auth.getSession === 'function';
 }
-const supabaseClient = window.supabaseClient;
-const adminSupabaseClient = window.adminSupabaseClient;
+
+function showAuthError(message) {
+    const errorEl = document.getElementById('authError');
+    if (!errorEl) return;
+    errorEl.innerText = message;
+    errorEl.classList.remove('hidden');
+}
+
+async function initSupabaseClients({ timeoutMs = 7000, intervalMs = 50 } = {}) {
+    if (isSupabaseClientReady(supabaseClient)) return true;
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const sdk = window.supabase;
+        if (sdk && typeof sdk.createClient === 'function') {
+            try {
+                if (!window.supabaseClient) {
+                    window.supabaseClient = sdk.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    window.adminSupabaseClient = sdk.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+                }
+                supabaseClient = window.supabaseClient || null;
+                adminSupabaseClient = window.adminSupabaseClient || null;
+                if (isSupabaseClientReady(supabaseClient)) return true;
+            } catch (e) {
+                break;
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+    return false;
+}
 
 let currentUser = null;
 let currentAuthMode = 'login'; // 'login' ou 'signup'
@@ -1375,6 +1405,11 @@ async function saveWeight(historyKey) {
 
 // ----- SISTEMA DE AUTENTICAÇÃO (SUPABASE) -----
 async function checkSession() {
+    if (!isSupabaseClientReady(supabaseClient)) {
+        showAuth();
+        showAuthError("Erro ao inicializar autenticação. Recarregue a página e verifique se o script do Supabase carregou.");
+        return;
+    }
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
@@ -1550,6 +1585,10 @@ function toggleAuthMode() {
 
 async function handleAuth(event) {
     event.preventDefault();
+    if (!isSupabaseClientReady(supabaseClient)) {
+        showAuthError("Erro ao inicializar autenticação. Recarregue a página e tente novamente.");
+        return;
+    }
     const name = document.getElementById('authName').value.trim();
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -1619,6 +1658,7 @@ async function handleAuth(event) {
 }
 
 async function handleLogout() {
+    if (!isSupabaseClientReady(supabaseClient)) return;
     const { error } = await supabaseClient.auth.signOut();
     if (error) {
         alert("Erro ao sair: " + error.message);
@@ -2034,11 +2074,16 @@ async function handleAddExercise(e) {
 // ----------------------------------------------
 
 // Inicialização da Página
-document.addEventListener("DOMContentLoaded", () => {
-    // Configura Auth via Supabase
+document.addEventListener("DOMContentLoaded", async () => {
+    const ok = await initSupabaseClients();
+    if (!ok) {
+        showAuth();
+        showAuthError("Falha ao carregar o Supabase. Verifique sua conexão e recarregue a página.");
+        return;
+    }
+
     checkSession();
-    
-    // Ouve mudanças na autenticação
+
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN') {
             currentUser = session.user;
