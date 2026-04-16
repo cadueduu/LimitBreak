@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExerciseDB App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-black text-gray-100 font-sans">
+    <!-- Tela de Autenticação -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center bg-black p-4">
+        <div class="bg-gray-900 p-8 rounded-xl shadow-lg max-w-md w-full">
+            <div class="text-center mb-8">
+                <div class="flex justify-center mb-4">
+                    <img src="logo.jpeg" alt="LimitBreak Logo" class="h-48 md:h-56 w-auto rounded-xl shadow-md">
+                </div>
+                <p id="authSubtitle" class="text-gray-400 text-sm">Faça login para salvar seus treinos e histórico na nuvem.</p>
+            </div>
+            
+            <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
+                <div id="nameFieldContainer" class="hidden">
+                    <label class="block text-sm font-medium text-gray-200 mb-1">Nome Completo</label>
+                    <input type="text" id="authName" class="w-full px-4 py-2 border rounded-lg bg-white text-black placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Seu nome">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-200 mb-1">Email</label>
+                    <input type="email" id="authEmail" required class="w-full px-4 py-2 border rounded-lg bg-white text-black placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="seu@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-200 mb-1">Senha</label>
+                    <input type="password" id="authPassword" required minlength="6" class="w-full px-4 py-2 border rounded-lg bg-white text-black placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="••••••">
+                </div>
+                
+                <div id="authError" class="text-red-500 text-sm hidden bg-red-50 p-3 rounded border border-red-100"></div>
+                <div id="authSuccess" class="text-green-600 text-sm hidden bg-green-50 p-3 rounded border border-green-100"></div>
+                
+                <div class="flex flex-col gap-3 pt-4">
+                    <button type="submit" id="btnSubmitAuth" class="w-full bg-orange-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                        Entrar
+                    </button>
+                    <button type="button" id="btnToggleAuthMode" onclick="toggleAuthMode()" class="w-full bg-transparent text-orange-500 font-semibold py-2 px-4 rounded-lg hover:underline transition-colors">
+                        Ainda não tem conta? Crie uma aqui
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Principal -->
+    <div id="mainApp" class="container mx-auto px-4 py-8 hidden">
+        <header class="mb-8 flex flex-col justify-center items-center gap-4 relative">
+            <div class="text-center w-full flex justify-center">
+                <img src="logo.jpeg" alt="LimitBreak Logo" class="h-48 md:h-64 w-auto rounded-xl shadow-lg hover:scale-105 transition-transform">
+            </div>
+            <div class="absolute right-0 top-0 flex items-center gap-4 bg-gray-900 px-4 py-2 rounded-lg shadow-sm border border-gray-800">
+                <span id="userEmailDisplay" class="text-sm font-medium text-gray-200"></span>
+                <button onclick="handleLogout()" class="text-sm text-red-500 hover:text-red-700 font-semibold border-l pl-4 border-gray-700">Sair</button>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-gray-800 p-1 rounded-lg inline-flex">
+                <button onclick="switchTab('catalog')" id="tab-catalog" class="tab-btn active px-6 py-2 rounded-md font-semibold text-gray-200 bg-orange-600 text-white">Catálogo</button>
+                <button onclick="switchTab('workout')" id="tab-workout" class="tab-btn px-6 py-2 rounded-md font-semibold text-gray-200">Montar Treino (<span id="workout-count">0</span>)</button>
+                <button onclick="switchTab('saved')" id="tab-saved" class="tab-btn px-6 py-2 rounded-md font-semibold text-gray-200">Fichas Salvas</button>
+                <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn px-6 py-2 rounded-md font-semibold text-white hidden bg-red-900 border border-red-800 ml-2 hover:bg-red-800">Novo Exercício (Admin)</button>
+            </div>
+        </div>
+
+        <!-- Aba: Catálogo -->
+        <div id="content-catalog" class="tab-content active">
+            <div class="mb-8 max-w-2xl mx-auto">
+                <input type="text" id="searchInput" placeholder="Pesquisar por nome, músculo ou equipamento..." 
+                       class="w-full px-4 py-3 rounded-lg shadow-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <div id="stats" class="mb-4 text-gray-300 font-semibold text-center"></div>
+
+            <div id="exercisesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards serão inseridos aqui pelo JavaScript -->
+            </div>
+            
+            <!-- Controles de Paginação -->
+            <div id="paginationControls" class="mt-10 flex justify-center items-center space-x-2">
+                <!-- Inserido pelo JavaScript -->
+            </div>
+        </div>
+
+        <!-- Aba: Montar Treino -->
+        <div id="content-workout" class="tab-content">
+            <div class="flex flex-col lg:flex-row gap-8">
+                
+                <!-- Lista de Seleção Agrupada por Músculo -->
+                <div class="lg:w-2/3 bg-gray-900 rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center border-b pb-4 mb-4">
+                        <div class="flex items-center gap-3">
+                            <button id="btnBackToCategories" onclick="showCategoriesView()" class="hidden bg-gray-800 hover:bg-gray-300 text-gray-200 px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                                Voltar
+                            </button>
+                            <h2 id="workoutSelectionTitle" class="text-2xl font-bold text-gray-100">Categorias Musculares</h2>
+                        </div>
+                    </div>
+                    
+                    <div id="workoutSearchContainer" class="mb-6 relative hidden">
+                        <input type="text" id="workoutSearchInput" placeholder="Buscar exercício nesta categoria..." 
+                               class="w-full px-4 py-3 rounded-lg shadow-sm border border-gray-700 focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    
+                    <!-- Container Principal (Categorias ou Exercícios) -->
+                    <div id="workoutSelectionContent" class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Renderizado via JS -->
+                    </div>
+                </div>
+
+                <!-- Painel do Treino Atual -->
+                <div class="lg:w-1/3">
+                    <div class="bg-gray-900 rounded-xl shadow-md p-6 sticky top-4 flex flex-col max-h-[800px]">
+                        <div class="flex justify-between items-center border-b pb-4 mb-4">
+                            <h2 class="text-2xl font-bold text-gray-100">Meu Treino</h2>
+                            <button onclick="clearWorkout()" class="text-sm text-red-600 hover:text-red-800 font-semibold">Limpar Tudo</button>
+                        </div>
+                        
+                        <div id="emptyWorkoutMsg" class="text-center py-8 text-gray-400 italic">
+                            Seu treino está vazio. Adicione exercícios ao lado!
+                        </div>
+                        
+                        <div id="currentWorkoutList" class="flex-grow overflow-y-auto space-y-3 pr-2 custom-scrollbar mb-4">
+                            <!-- Renderizado via JS -->
+                        </div>
+                        
+                        <div class="border-t pt-4 mt-auto">
+                            <input type="text" id="workoutName" placeholder="Nome da ficha (ex: Treino A - Peito)" 
+                                   class="w-full mb-3 px-4 py-2 border rounded-md focus:ring-2 focus:ring-orange-500">
+                            
+                            <!-- Dropdown de seleção de aluno (Apenas Admin) -->
+                            <div id="adminStudentSelectContainer" class="hidden mb-3">
+                                <div class="flex gap-2">
+                                    <select id="adminStudentSelect" class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-red-500 bg-gray-800 border-gray-700 text-white font-medium">
+                                        <option value="me">Para Mim Mesmo</option>
+                                        <!-- Populado via JS se for admin -->
+                                    </select>
+                                    <button type="button" id="btnLoadStudentWorkout" onclick="loadSelectedStudentWorkout()" class="bg-gray-800 text-white hover:bg-gray-700 px-3 py-2 rounded-md font-semibold transition-colors whitespace-nowrap border border-gray-600" title="Carregar última ficha selecionada">
+                                        Carregar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <button onclick="saveWorkout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition-colors flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
+                                Salvar Ficha de Treino
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Aba: Fichas Salvas -->
+        <div id="content-saved" class="tab-content">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-gray-900 rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 mb-6 gap-4">
+                        <h2 class="text-2xl font-bold text-gray-100">Minhas Fichas de Treino</h2>
+                        
+                        <!-- Filtro de Aluno (Admin) -->
+                        <div id="adminViewFilterContainer" class="hidden flex items-center gap-2 bg-gray-800 px-3 py-2 rounded-lg border border-gray-700">
+                            <span class="text-sm font-semibold text-gray-300">Visualizando:</span>
+                            <select id="adminViewFilterSelect" onchange="fetchSavedWorkouts()" class="bg-gray-900 text-sm border-gray-700 rounded focus:ring-red-500 focus:border-red-500 py-1 pl-2 pr-6">
+                                <option value="me">Minhas Fichas</option>
+                                <option value="all">Todos os Alunos</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="savedWorkoutsList" class="space-y-6">
+                        <!-- Renderizado via JS -->
+                    </div>
+                    
+                    <div id="emptySavedMsg" class="text-center py-12 text-gray-400 italic hidden">
+                        Você ainda não possui fichas de treino salvas.<br>
+                        Vá até a aba "Montar Treino" para criar a sua primeira!
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Aba: Admin (Novo Exercício) -->
+        <div id="content-admin" class="tab-content hidden">
+            <div class="max-w-5xl mx-auto">
+                <div class="bg-gray-900 rounded-xl shadow-md p-6 border-t-4 border-red-500 relative">
+                    <!-- Botão cancelar edição escondido por padrão -->
+                    <button type="button" id="btnCancelEdit" onclick="cancelEditMode()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 hidden text-sm font-bold flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        Cancelar Edição
+                    </button>
+                    
+                    <h2 id="adminFormTitle" class="text-2xl font-bold text-gray-100 border-b pb-4 mb-6">Painel Administrativo: Adicionar Exercício</h2>
+                    
+                    <form id="adminAddExerciseForm" onsubmit="handleAddExercise(event)" class="space-y-6">
+                        <input type="hidden" id="editExerciseId" value="">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Esquerda: Dados Textuais -->
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-200 mb-1">Nome do Exercício</label>
+                                    <input type="text" id="addNamePt" required class="w-full px-4 py-2 border border-gray-700 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500" placeholder="Ex: Supino Reto">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-200 mb-1">URL do Vídeo (GIF ou MP4)</label>
+                                    <input type="url" id="addGifUrl" oninput="document.getElementById('adminGifPreview').src=this.value" required class="w-full px-4 py-2 border border-gray-700 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500" placeholder="https://...">
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-sm font-medium text-gray-200">Região que Trabalha</label>
+                                        <button type="button" onclick="updateAdminAnatomyPreview()" class="bg-gray-800 text-white hover:bg-gray-700 px-3 py-1 rounded text-xs font-semibold border border-gray-600 transition-colors">
+                                            Gerar Imagem da API
+                                        </button>
+                                    </div>
+                                    <div class="max-h-64 overflow-y-auto p-3 border rounded-lg bg-gray-800 custom-scrollbar space-y-4" id="adminMuscleCheckboxes">
+                                        <!-- Populado via JS e agrupado por categoria -->
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-200 mb-1">Instruções Passo a Passo (Um passo por linha)</label>
+                                    <textarea id="addInstructions" rows="4" class="w-full px-4 py-2 border border-gray-700 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 custom-scrollbar" placeholder="Ex:&#10;Deite no banco e alinhe os olhos com a barra.&#10;Segure a barra com a pegada um pouco mais larga que os ombros.&#10;Desça a barra até o peito controladamente..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Direita: Previews -->
+                            <div class="space-y-4 flex flex-col">
+                                <div class="bg-gray-800 border rounded-lg p-4 flex-grow flex flex-col items-center justify-center text-center">
+                                    <span class="text-xs text-gray-400 mb-2 font-bold uppercase tracking-wider">Preview do Vídeo</span>
+                                    <img id="adminGifPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='sans-serif' font-size='16'>Sem Vídeo</text></svg>" class="max-h-48 object-contain rounded shadow-sm" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 300 200\\'><rect width=\\'300\\' height=\\'200\\' fill=\\'%23f3f4f6\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%239ca3af\\' font-family=\\'sans-serif\\' font-size=\\'16\\'>Sem Vídeo</text></svg>'">
+                                </div>
+                                <div class="bg-red-950 border border-red-900 rounded-lg p-4 flex-grow flex flex-col items-center justify-center text-center relative overflow-hidden" style="min-height: 250px;">
+                                    <span class="text-xs text-red-500 mb-2 font-bold uppercase tracking-wider z-10 relative">Anatomia Gerada</span>
+                                    <div id="adminAnatomyContainer" class="relative w-full h-full flex items-center justify-center">
+                                        <p id="adminAnatomyPlaceholder" class="text-gray-400 text-sm">Selecione as regiões</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t pt-6 mt-6">
+                            <button type="submit" id="btnSaveNewExercise" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow transition-colors text-lg flex items-center justify-center gap-2">
+                                <svg id="btnSaveIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span id="btnSaveText">Adicionar Exercício ao Banco</span>
+                            </button>
+                            <p id="adminAddMsg" class="mt-3 text-center text-sm font-semibold hidden"></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- Fim container mainApp -->
+
+    <!-- Modal do Exercício -->
+    <div id="exerciseModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 opacity-0 pointer-events-none p-4 overflow-y-auto">
+        <div class="modal-content bg-gray-900 w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b bg-gray-800">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-100 uppercase tracking-wide">Nome do Exercício</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 transition-colors p-2 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow flex flex-col lg:flex-row gap-8">
+                <!-- Coluna Esquerda: GIFs e Imagens -->
+                <div class="lg:w-1/2 flex flex-col gap-6">
+                    <div class="bg-white rounded-xl p-4 border border-gray-200 flex justify-center items-center shadow-inner">
+                        <img id="modalGif" src="" alt="GIF do Exercício" class="max-h-96 w-full object-contain rounded-lg mix-blend-multiply">
+                    </div>
+                    
+                    <div class="bg-white rounded-xl p-4 border border-gray-200 flex flex-col sm:flex-row gap-4 items-center" style="display: flex;">
+                        <div class="flex-grow z-10 relative">
+                            <h3 class="text-lg font-bold text-orange-600 mb-1">Região Trabalhada</h3>
+                            <p id="modalBodyPartText" class="text-orange-700 font-semibold uppercase text-sm"></p>
+                        </div>
+                        <div id="modalAnatomyContainer" class="w-48 h-48 sm:w-64 sm:h-64 relative mix-blend-multiply opacity-90 flex-shrink-0">
+                            <!-- Imagens sobrepostas inseridas aqui via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Informações e Instruções -->
+                <div class="lg:w-1/2 flex flex-col gap-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-4 rounded-xl border border-gray-800">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Músculo Alvo</p>
+                            <p id="modalTargetMuscle" class="text-gray-100 font-medium"></p>
+                        </div>
+                        <div class="bg-gray-800 p-4 rounded-xl border border-gray-800">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">Equipamento</p>
+                            <p id="modalEquipment" class="text-gray-100 font-medium"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex-grow flex flex-col">
+                        <h3 class="text-xl font-bold text-gray-100 border-b pb-2 mb-4">Instruções Passo a Passo</h3>
+                        <div id="modalInstructions" class="text-gray-200 bg-gray-800 p-6 rounded-xl border border-gray-800 flex-grow text-lg leading-relaxed">
+                            <!-- Instruções inseridas aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts da aplicação -->
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Dados Locais de Exercícios -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
