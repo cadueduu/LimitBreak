@@ -11,7 +11,7 @@ content = content.replace('profiles ( full_name )', 'profiles!workout_sheets_use
 old_card_html = """
         card.innerHTML = `
             <div class="h-56 bg-gray-800 flex items-center justify-center border-b border-gray-700 p-2 relative group">
-                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='logo.jpeg'">
+                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='https://via.placeholder.com/300x200?text=GIF+Indisponível'">
                 <div class="absolute inset-0 bg-orange-600 bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
                     <span class="bg-orange-600 text-white px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity font-semibold transform scale-95 group-hover:scale-100 shadow-lg">Ver Detalhes</span>
                 </div>
@@ -39,7 +39,7 @@ old_card_html = """
 new_card_html = """
         card.innerHTML = `
             <div class="h-56 bg-white flex items-center justify-center border-b border-gray-700 p-2 relative group rounded-t-xl">
-                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='logo.jpeg'">
+                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='https://via.placeholder.com/300x200?text=GIF+Indisponível'">
                 <div class="absolute inset-0 bg-orange-600 bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center rounded-t-xl">
                     <span class="bg-orange-600 text-white px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity font-semibold transform scale-95 group-hover:scale-100 shadow-lg">Ver Detalhes</span>
                 </div>

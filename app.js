@@ -1,20 +1,17 @@
 // Inicialização Supabase
-const SUPABASE_URL = window.__APP_CONFIG__?.SUPABASE_URL;
-const SUPABASE_KEY = window.__APP_CONFIG__?.SUPABASE_ANON_KEY;
+const SUPABASE_URL = "https://nxtcetqtnmqpamhfpjdm.supabase.co";
+// Mudamos para a anon_key, que é o padrão correto para operações no frontend (login, queries seguras)
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTY1NjAsImV4cCI6MjA5MTkzMjU2MH0.NfJG6_yoeFHbfzIvRodomolI40lgSNUUgBG9YGYYXGA";
+// Chave de serviço para permitir ao Admin ler fichas de outros alunos (ignora RLS)
+const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjU2MCwiZXhwIjoyMDkxOTMyNTYwfQ.uIJMRjP3cxGs0p0hxGS44UIiWVV0bEUmVvtmLzzJNpw";
 
 // Garantir que a variável global não gere erro de conflito caso o arquivo seja carregado multiplas vezes
 if (typeof window.supabaseClient === 'undefined') {
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
-        const authError = document.getElementById('authError');
-        if (authError) {
-            authError.textContent = 'Configuração do Supabase ausente. Configure config.js (local) ou Secrets do GitHub Pages.';
-            authError.classList.remove('hidden');
-        }
-    } else {
-        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.adminSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 const supabaseClient = window.supabaseClient;
+const adminSupabaseClient = window.adminSupabaseClient;
 
 let currentUser = null;
 let currentAuthMode = 'login'; // 'login' ou 'signup'
@@ -250,7 +247,7 @@ function renderExercises() {
         
         card.innerHTML = `
             <div class="h-56 bg-white flex items-center justify-center border-b border-gray-700 p-2 relative group rounded-t-xl">
-                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='logo.jpeg'">
+                <img src="${imgSrc}" alt="${displayName}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy" onerror="this.src='https://via.placeholder.com/300x200?text=GIF+Indisponível'">
                 <div class="absolute inset-0 bg-orange-600 bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center rounded-t-xl">
                     <span class="bg-orange-600 text-white px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity font-semibold transform scale-95 group-hover:scale-100 shadow-lg">Ver Detalhes</span>
                 </div>
@@ -410,7 +407,7 @@ function showCategoriesView() {
         if (!muscleCounts[mainMuscle]) {
             muscleCounts[mainMuscle] = {
                 count: 0,
-                img: localAnatomyImages[mainMuscle] || 'logo.jpeg'
+                img: localAnatomyImages[mainMuscle] || 'https://via.placeholder.com/150?text=Sem+Imagem'
             };
         }
         muscleCounts[mainMuscle].count++;
@@ -425,7 +422,7 @@ function showCategoriesView() {
         
         card.innerHTML = `
             <div class="w-16 h-16 mb-3 rounded-full bg-orange-900 flex items-center justify-center border border-orange-800 group-hover:bg-orange-800 transition-colors overflow-hidden p-1">
-                <img src="${info.img}" alt="${muscle}" class="max-w-full max-h-full object-contain" onerror="this.src='logo.jpeg'">
+                <img src="${info.img}" alt="${muscle}" class="max-w-full max-h-full object-contain" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 150 150\\'><rect width=\\'150\\' height=\\'150\\' fill=\\'%23f3f4f6\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%239ca3af\\' font-family=\\'sans-serif\\' font-size=\\'14\\'>${encodeURIComponent(muscle)}</text></svg>'">
             </div>
             <h3 class="font-bold text-gray-100 text-center text-sm uppercase">${translateMuscle(muscle)}</h3>
             <span class="text-xs text-gray-400 mt-1 bg-black px-2 py-0.5 rounded-full">${info.count} ex.</span>
@@ -714,7 +711,7 @@ async function saveWorkout() {
     btn.innerHTML = 'Salvando na Nuvem...';
     
     try {
-        const client = supabaseClient;
+        const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
         
         // 1. Criar a Planilha de Treino (workout_sheets)
         const { data: sheetData, error: sheetError } = await client
@@ -821,7 +818,7 @@ async function fetchSavedWorkouts() {
     
     try {
         // Usa o client de admin se for admin para ignorar RLS, senão usa o padrão
-        const client = supabaseClient;
+        const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
         
         // Busca as fichas, os dias e os exercícios de uma vez (usando a relação)
         let query = client
@@ -933,7 +930,7 @@ async function fetchWeightHistory() {
     }
     
     try {
-        const client = supabaseClient;
+        const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
         
         let query = client
             .from('workout_logs')
@@ -1117,7 +1114,7 @@ function renderSavedWorkouts() {
 async function deleteWorkout(id) {
     if (confirm("Tem certeza que deseja excluir esta ficha de treino? (Isso também excluirá o histórico de cargas associado a ela)")) {
         try {
-            const client = supabaseClient;
+            const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
             
             // Como temos chaves estrangeiras (fkey), precisamos apagar em ordem
             const workout = savedWorkouts.find(w => w.id === id);
@@ -1171,7 +1168,7 @@ async function loadSelectedStudentWorkout() {
     const targetUserId = selectEl.value;
     
     try {
-        const client = supabaseClient;
+        const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
         
         // Fetch the latest sheet for this user
         const { data: sheets, error } = await client
@@ -1307,7 +1304,7 @@ async function saveWeight(historyKey) {
         btn.disabled = true;
 
         try {
-            const client = supabaseClient;
+            const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
             
             // Extrair IDs do historyKey (formato: sheetId_exerciseIdString_blockId)
             const parts = historyKey.split('_');
@@ -1378,11 +1375,6 @@ async function saveWeight(historyKey) {
 
 // ----- SISTEMA DE AUTENTICAÇÃO (SUPABASE) -----
 async function checkSession() {
-    if (!supabaseClient) {
-        showAuth();
-        return;
-    }
-
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
@@ -1496,7 +1488,7 @@ async function fetchAllUsersForAdmin() {
     if (!isAdminGlobal) return;
     
     try {
-        const client = supabaseClient;
+        const client = isAdminGlobal ? adminSupabaseClient : supabaseClient;
         
         // Busca todos os usuários cadastrados na tabela profiles. 
         // Usamos select('*') para garantir que puxa tudo o que estiver lá.
@@ -2045,23 +2037,21 @@ async function handleAddExercise(e) {
 document.addEventListener("DOMContentLoaded", () => {
     // Configura Auth via Supabase
     checkSession();
-
-    if (supabaseClient) {
-        // Ouve mudanças na autenticação
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN') {
-                currentUser = session.user;
-                showApp();
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                showAuth();
-            }
-        });
-    }
+    
+    // Ouve mudanças na autenticação
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+            currentUser = session.user;
+            showApp();
+        } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            showAuth();
+        }
+    });
 
     // Torna currentUser acessível globalmente para verificar se é admin em qualquer lugar
     window.checkIsAdmin = async function() {
-        if (!currentUser || !supabaseClient) return false;
+        if (!currentUser) return false;
         try {
             const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
             return data && data.role === 'admin';
