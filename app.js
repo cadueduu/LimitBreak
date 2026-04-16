@@ -3,7 +3,7 @@ const SUPABASE_URL = "https://nxtcetqtnmqpamhfpjdm.supabase.co";
 // Mudamos para a anon_key, que é o padrão correto para operações no frontend (login, queries seguras)
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTY1NjAsImV4cCI6MjA5MTkzMjU2MH0.NfJG6_yoeFHbfzIvRodomolI40lgSNUUgBG9YGYYXGA";
 // Chave de serviço para permitir ao Admin ler fichas de outros alunos (ignora RLS)
-const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjU2MCwiZXhwIjoyMDkxOTMyNTYwfQ.uIJMRjP3cxGs0p0hxGS44UIiWVV0bEUmVvtmLzzJNpw";
+// const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54dGNldHF0bm1xcGFtaGZwamRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjU2MCwiZXhwIjoyMDkxOTMyNTYwfQ.uIJMRjP3cxGs0p0hxGS44UIiWVV0bEUmVvtmLzzJNpw";
 
 let supabaseClient = window.supabaseClient || null;
 let adminSupabaseClient = window.adminSupabaseClient || null;
